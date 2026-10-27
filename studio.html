@@ -15,6 +15,9 @@
   --e:#2b5fa8; --e-bg:#e3ecf8;
   --b:#a3620c; --b-bg:#fbefdc;
   --o:#7b4a8e; --o-bg:#f1e7f5;
+  --t:#0e7c86; --t-bg:#dcf1f3;
+  --h:#8a4b2a; --h-bg:#f5e8df;
+  --p:#a8366b; --p-bg:#f8e4ee;
   --g:#9b2c3c; --g-bg:#f8e6e9;
   --f-display:"Noto Serif SC","Songti SC",serif;
   --f-body:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
@@ -23,11 +26,11 @@
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#12161a; --surface:#1a1f25; --fg:#e6e9ec; --muted:#9aa3ad; --line:#2c333b; --accent:#8db4dc; --accent-fg:#10161c;
   --c:#b5bec8; --c-bg:#252c34; --s:#5fc79f; --s-bg:#15302a; --e:#82aee8; --e-bg:#18263a; --b:#e3a24c; --b-bg:#33280f;
-  --o:#c79ad9; --o-bg:#2c1f33; --g:#ef8a98; --g-bg:#3a1c22; color-scheme:dark}}
+  --o:#c79ad9; --o-bg:#2c1f33; --t:#5cc6cf; --t-bg:#12313a; --h:#e0a07e; --h-bg:#35231a; --p:#ec8fb8; --p-bg:#3a1a2a; --g:#ef8a98; --g-bg:#3a1c22; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#12161a; --surface:#1a1f25; --fg:#e6e9ec; --muted:#9aa3ad; --line:#2c333b; --accent:#8db4dc; --accent-fg:#10161c;
   --c:#b5bec8; --c-bg:#252c34; --s:#5fc79f; --s-bg:#15302a; --e:#82aee8; --e-bg:#18263a; --b:#e3a24c; --b-bg:#33280f;
-  --o:#c79ad9; --o-bg:#2c1f33; --g:#ef8a98; --g-bg:#3a1c22; color-scheme:dark}
+  --o:#c79ad9; --o-bg:#2c1f33; --t:#5cc6cf; --t-bg:#12313a; --h:#e0a07e; --h-bg:#35231a; --p:#ec8fb8; --p-bg:#3a1a2a; --g:#ef8a98; --g-bg:#3a1c22; color-scheme:dark}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.6}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
@@ -66,7 +69,7 @@ select,input[type=month],input[type=text]{border:1px solid var(--line);backgroun
 
 /* tracks */
 .t-c{--tk:var(--c);--tb:var(--c-bg)} .t-s{--tk:var(--s);--tb:var(--s-bg)} .t-e{--tk:var(--e);--tb:var(--e-bg)}
-.t-b{--tk:var(--b);--tb:var(--b-bg)} .t-o{--tk:var(--o);--tb:var(--o-bg)} .t-g{--tk:var(--g);--tb:var(--g-bg)}
+.t-b{--tk:var(--b);--tb:var(--b-bg)} .t-o{--tk:var(--o);--tb:var(--o-bg)} .t-t{--tk:var(--t);--tb:var(--t-bg)} .t-h{--tk:var(--h);--tb:var(--h-bg)} .t-p{--tk:var(--p);--tb:var(--p-bg)} .t-g{--tk:var(--g);--tb:var(--g-bg)}
 .pill{display:inline-block;font-size:.72rem;font-weight:700;color:var(--tk);background:var(--tb);border-radius:4px;padding:0 6px;white-space:nowrap}
 .kind{font-size:.72rem;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 5px;margin-right:6px;white-space:nowrap}
 .dim{opacity:.28}
@@ -136,10 +139,10 @@ const PAGE="studio";
    年偏移：E-3 = G10 秋季学年开始那一年（如 2029 届 → 2026） */
 let LIB=[];
 const SRC={X:"张欣凤原表",L:"刘梓童沟通会 + 你的补充",Y:"于明含沟通会 + 你的补充"};
-const MOD={c:"全体",s:"生化",e:"工科",b:"商科",o:"社科",g:"决策"};
-const MODFULL={s:"生物 / 化学",e:"工程 / 物理 / 数学",b:"商科 / 经济",o:"社科 / 心理 / 教育"};
-let REQ={s:"数学 + 生物 + 化学",e:"数学 + 高数 + 物理（+ 化学）",b:"数学 + 经济（高数加分）",o:"待补充"};
-let TEST={s:"ESAT",e:"ESAT（数学类方向为 TMUA）",b:"TMUA",o:"待补充"};
+const MOD={c:"全体",s:"生物化学",p:"心理学",e:"工程物理",t:"数学",b:"经济商科",o:"社科",h:"文科",g:"决策"};
+const MODFULL={s:"生物 / 化学",p:"心理学",e:"工程 / 物理",t:"数学",b:"经济 / 商科",o:"社科 / 教育 / 法律",h:"文科 / 历史 / 文学"};
+let REQ={s:"数学 + 生物 + 化学",p:"待补充",e:"数学 + 高数 + 物理（+ 化学）",t:"数学 + 高数",b:"数学 + 经济（高数加分）",o:"待补充",h:"待补充"};
+let TEST={s:"ESAT",p:"目前无需类似 ESAT 的笔试",e:"ESAT",t:"TMUA",b:"TMUA",o:"待补充",h:"待补充"};
 const NODES=[
  {yo:-2,mo:3,k:"pick",title:"A-level 选科定案"},
  {yo:-2,mo:6,k:"igcse",title:"IGCSE 收官 · 暑期落地"},
@@ -162,7 +165,7 @@ const now=new Date();const TODAY=ym(now.getFullYear(),now.getMonth()+1);
 const fmt=m=>`${m.slice(2,4)}.${+m.slice(5)}`;
 const fmtLong=m=>`${m.slice(0,4)} 年 ${+m.slice(5)} 月`;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const expand=m=>m==="m"?["s","e","b"]:m.split(",");
+const expand=m=>m==="m"?["s","e","t","b"]:m.split(",");
 const grade=(E,m)=>{const[y,mo]=m.split("-").map(Number);const g=10+(y-(E-3))-(mo>=9?0:1);return g<10?`G${g}暑`:`G${g}`};
 const short=t=>t.replace(/（[^）]*）/g,"").split("，")[0].trim();
 const rel=(E,yo,mo)=>ym(E+yo,mo);
@@ -170,7 +173,7 @@ const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.
 
 /* ---------- 学生配置 <-> 链接后缀 ---------- */
 const toToken=c=>`e${c.E}-${c.main}-${c.sec||"x"}-${((c.uk?"u":"")+(c.hk?"h":""))||"n"}-j${c.join.replace("-","")}`;
-function fromToken(t){const m=/^e(\d{4})-([sebo])-([sebox])-([uhn]+)-j(\d{6})$/.exec(t||"");if(!m)return null;
+function fromToken(t){const m=/^e(\d{4})-([sptebho])-([sptebhox])-([uhn]+)-j(\d{6})$/.exec(t||"");if(!m)return null;
  return{E:+m[1],main:m[2],sec:m[3]==="x"||m[3]===m[2]?"":m[3],uk:m[4].includes("u"),hk:m[4].includes("h"),join:m[5].slice(0,4)+"-"+m[5].slice(4)}}
 
 /* ---------- 生成个人规划 ---------- */
@@ -218,7 +221,7 @@ function enterStudent(c,fs){CFG=c;mode="student";fromStudio=fs;const ms=monthsOf
 /* ---------- 渲染：学生视图 ---------- */
 const dimC=tr=>(hl==="all"||tr===hl||tr==="g")?"":" dim";
 function trOf(t){return t.tr}
-function dotsFor(ts){const s=new Set(ts.map(t=>t.tr==="g"?"c":t.tr));return ["c","s","e","b","o"].filter(x=>s.has(x)).map(x=>`<span class="dot t-${x}"></span>`).join("")}
+function dotsFor(ts){const s=new Set(ts.map(t=>t.tr==="g"?"c":t.tr));return ["c","s","p","e","t","b","o","h"].filter(x=>s.has(x)).map(x=>`<span class="dot t-${x}"></span>`).join("")}
 function taskLi(t){return `<li class="task t-${t.tr}${dimC(t.tr)}"><span class="pill">${MOD[t.tr]}</span><div><span class="kind">${t.kind}</span>${esc(t.title)}<span class="done">完成标准：${esc(t.done)}</span></div></li>`}
 function sMonth(P){
  const ms=monthsOf(CFG),ns=nodesOf(CFG),nodeSet=new Set(ns.map(n=>n.m));
@@ -299,7 +302,7 @@ function grpTasks(g){
   if(r==="uk"&&!g.uk)continue;if(r==="hk"&&!g.hk)continue;
   const ms=expand(mods);let key;if(ms.includes("c"))key="c";else{const hit=ms.filter(x=>sel.has(x));if(!hit.length)continue;key=hit.join(",")}
   (groups[key]??=[]).push({kind,title,done,p})}
- const rk=k=>k==="c"?-1:"sebo".indexOf(k[0])*10+k.length;const order=Object.keys(groups).sort((a,b)=>rk(a)-rk(b));
+ const rk=k=>k==="c"?-1:"spteboh".indexOf(k[0])*10+k.length;const order=Object.keys(groups).sort((a,b)=>rk(a)-rk(b));
  return order.map(k=>({key:k,label:k==="c"?"全体同学":k.split(",").map(x=>MOD[x]).join(" · ")+(k.includes(",")?"":"方向"),cls:k==="c"?"c":k.split(",")[0],items:groups[k].sort((a,b)=>a.p-b.p)}));
 }
 function grpDoc(g){
@@ -328,7 +331,7 @@ function stLib(){
   const g=grade(2029,ym(2029+yo,mo));
   return `<tr><td class="mm">${g} · ${mo}月</td><td>${ms.map(x=>`<span class="pill t-${kind==="决策"?"g":x}">${MOD[x]}</span>`).join(" ")}</td><td><span class="kind">${kind}</span>${esc(title)}</td><td>${esc(done)}</td><td>${r==="uk"?"英国":r==="hk"?"香港":"—"}</td><td>${"●".repeat(4-p)}</td><td class="note">${esc(SRC[src]||src||"未注明")}</td></tr>`}).join("");
  return `<section class="card"><h2>任务库</h2><p class="sub">按年级和月份写，所有届通用：换届别时日期自动顺延。内容来自网站的 tasks.csv，修改那个文件即可更新；每条都标了来源。</p>
-  <div class="row" style="margin:12px 0">${["all","c","s","e","b","o"].map(k=>`<button class="tab" data-lib="${k}" aria-pressed="${libF===k}">${k==="all"?"全部":MOD[k]}</button>`).join("")}</div>
+  <div class="row" style="margin:12px 0">${["all","c","s","p","e","t","b","o","h"].map(k=>`<button class="tab" data-lib="${k}" aria-pressed="${libF===k}">${k==="all"?"全部":MOD[k]}</button>`).join("")}</div>
   <div class="tablewrap"><table class="lib"><thead><tr><th>时间</th><th>方向</th><th>任务</th><th>完成标准</th><th>地区</th><th>重要度</th><th>来源</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
 }
 
@@ -354,7 +357,7 @@ function render(){
 }
 
 /* ---------- 提醒图（固定浅色，便于转发） ---------- */
-const PC={c:["#4a5563","#eceff2"],s:["#1f7a5c","#e1f2eb"],e:["#2b5fa8","#e3ecf8"],b:["#a3620c","#fbefdc"],o:["#7b4a8e","#f1e7f5"]};
+const PC={c:["#4a5563","#eceff2"],s:["#1f7a5c","#e1f2eb"],e:["#2b5fa8","#e3ecf8"],b:["#a3620c","#fbefdc"],o:["#7b4a8e","#f1e7f5"],t:["#0e7c86","#dcf1f3"],h:["#8a4b2a","#f5e8df"],p:["#a8366b","#f8e4ee"]};
 let fontsP=null;
 function fontsReady(){return fontsP??=Promise.all([document.fonts.load('900 60px "Noto Serif SC"','提醒'),document.fonts.load('500 30px "Noto Sans SC"','任务'),document.fonts.load('700 30px "Noto Sans SC"','任务')]).catch(()=>{})}
 function wrapT(ctx,text,w){const out=[];let line="";for(const ch of text){const t=line+ch;if(ctx.measureText(t).width>w&&line){out.push(line);line=ch}else line=t}if(line)out.push(line);return out}
@@ -469,7 +472,7 @@ document.addEventListener("change",e=>{
  else if(el.id==="p-range"){prange=el.value}
  else if(el.id==="g-brand"){brand=el.value.trim()||"卓越领航服务";render()}
 });
-const K={"全体":"c","生化":"s","工科":"e","商科":"b","社科":"o"};
+const K={"全体":"c","生物化学":"s","心理学":"p","工程物理":"e","数学":"t","经济商科":"b","社科":"o","文科":"h"};
 function parseCSV(t){t=t.replace(/^\ufeff/,"");const rows=[];let row=[],f="",q=false;for(let i=0;i<t.length;i++){const ch=t[i];if(q){if(ch==='"'){if(t[i+1]==='"'){f+='"';i++}else q=false}else f+=ch}else if(ch==='"')q=true;else if(ch===","){row.push(f);f=""}else if(ch==="\n"||ch==="\r"){if(ch==="\r"&&t[i+1]==="\n")i++;row.push(f);f="";if(row.some(x=>x.trim()))rows.push(row);row=[]}else f+=ch}row.push(f);if(row.some(x=>x.trim()))rows.push(row);return rows}
 function toLib(rows){const out=[];for(const r of rows.slice(1)){const[gr,mo,dir,kind,title,done,p,reg,src]=r.map(x=>(x||"").trim());const gn=gr.startsWith("G9")?9:+gr.replace(/\D/g,"");const m=+mo;if(!gn||!m||!title)continue;
  const mods=dir.split(/[、,，\/\s]+/).map(x=>K[x]).filter(Boolean);if(!mods.length)continue;
