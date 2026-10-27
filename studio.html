@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head><body>
+<title>升学规划工作台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@600;900&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: sticky control bar over one working pane. 工作台 (老师) = 表单 + 预览；学生视图 = 总览 / 按月 / 节点。颜色按方向编码。 */
+:root{
+  --bg:#f5f6f7; --surface:#ffffff; --fg:#1c2226; --muted:#647079; --line:#dce0e4;
+  --accent:#23466b; --accent-fg:#ffffff;
+  --c:#4a5563; --c-bg:#eceff2;
+  --s:#1f7a5c; --s-bg:#e1f2eb;
+  --e:#2b5fa8; --e-bg:#e3ecf8;
+  --b:#a3620c; --b-bg:#fbefdc;
+  --o:#7b4a8e; --o-bg:#f1e7f5;
+  --g:#9b2c3c; --g-bg:#f8e6e9;
+  --f-display:"Noto Serif SC","Songti SC",serif;
+  --f-body:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#12161a; --surface:#1a1f25; --fg:#e6e9ec; --muted:#9aa3ad; --line:#2c333b; --accent:#8db4dc; --accent-fg:#10161c;
+  --c:#b5bec8; --c-bg:#252c34; --s:#5fc79f; --s-bg:#15302a; --e:#82aee8; --e-bg:#18263a; --b:#e3a24c; --b-bg:#33280f;
+  --o:#c79ad9; --o-bg:#2c1f33; --g:#ef8a98; --g-bg:#3a1c22; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12161a; --surface:#1a1f25; --fg:#e6e9ec; --muted:#9aa3ad; --line:#2c333b; --accent:#8db4dc; --accent-fg:#10161c;
+  --c:#b5bec8; --c-bg:#252c34; --s:#5fc79f; --s-bg:#15302a; --e:#82aee8; --e-bg:#18263a; --b:#e3a24c; --b-bg:#33280f;
+  --o:#c79ad9; --o-bg:#2c1f33; --g:#ef8a98; --g-bg:#3a1c22; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.6}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.wrap{max-width:1000px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{padding-block:26px 12px}
+h1{font-family:var(--f-display);font-weight:900;font-size:1.85rem;margin:0;letter-spacing:.02em;text-wrap:balance}
+h2{font-family:var(--f-display);font-weight:600;font-size:1.15rem;margin:0 0 8px;text-wrap:balance}
+.sub{color:var(--muted);margin:4px 0 0;font-size:.9rem}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.bar .wrap{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;padding-block:10px}
+.group{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.group-label{font-size:.75rem;color:var(--muted);letter-spacing:.08em}
+button,select,input{font:inherit;color:var(--fg)}
+button{cursor:pointer;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 12px;font-size:.85rem}
+button:disabled{opacity:.4;cursor:default}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.tab[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+button.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);padding:7px 16px}
+button.hl[aria-pressed="true"]{background:var(--fg);color:var(--surface);border-color:var(--fg)}
+main{padding-block:20px 56px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px}
+.stack{display:flex;flex-direction:column;gap:16px}
+.two{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:760px){.two{grid-template-columns:minmax(0,1fr)}}
+.field{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.field label,.field .lab{font-size:.8rem;color:var(--muted)}
+select,input[type=month],input[type=text]{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:6px 10px;width:100%}
+.checks{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.9rem}
+.checks label{display:flex;gap:5px;align-items:center;color:var(--fg)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.linkbox{font-family:var(--f-mono);font-size:.78rem;background:var(--bg);border:1px dashed var(--line);border-radius:8px;padding:8px 10px;word-break:break-all;user-select:all}
+.stat{display:flex;gap:18px;flex-wrap:wrap;margin:6px 0 14px}
+.stat div{font-size:.8rem;color:var(--muted)}
+.stat b{display:block;font-family:var(--f-mono);font-size:1.4rem;color:var(--fg);font-weight:500;font-variant-numeric:tabular-nums}
+.toast{font-size:.82rem;color:var(--s);min-height:1.2em}
+
+/* tracks */
+.t-c{--tk:var(--c);--tb:var(--c-bg)} .t-s{--tk:var(--s);--tb:var(--s-bg)} .t-e{--tk:var(--e);--tb:var(--e-bg)}
+.t-b{--tk:var(--b);--tb:var(--b-bg)} .t-o{--tk:var(--o);--tb:var(--o-bg)} .t-g{--tk:var(--g);--tb:var(--g-bg)}
+.pill{display:inline-block;font-size:.72rem;font-weight:700;color:var(--tk);background:var(--tb);border-radius:4px;padding:0 6px;white-space:nowrap}
+.kind{font-size:.72rem;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 5px;margin-right:6px;white-space:nowrap}
+.dim{opacity:.28}
+
+/* month strip */
+.strip{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px}
+.yr{display:flex;flex-direction:column;gap:4px}
+.yr-label{font-family:var(--f-mono);font-size:.72rem;color:var(--muted)}
+.yr-row{display:flex;gap:4px}
+.mbtn{border-radius:8px;padding:6px 0 4px;width:46px;display:flex;flex-direction:column;align-items:center;gap:3px;font-family:var(--f-mono);font-size:.8rem}
+.mbtn[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);color:var(--accent)}
+.mbtn.node{border-style:dashed;border-color:var(--g)}
+.mbtn.past{opacity:.5}
+.dots{display:inline-flex;gap:2px;height:6px}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--tk)}
+.eyebrow{font-size:.75rem;letter-spacing:.1em;color:var(--muted)}
+.headline{font-family:var(--f-display);font-weight:900;font-size:1.5rem;line-height:1.35;margin:4px 0 2px;text-wrap:balance}
+.tasks{list-style:none;margin:14px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.task{display:grid;grid-template-columns:64px minmax(0,1fr);gap:10px;align-items:baseline;padding:8px 10px;border-radius:8px;background:var(--tb);transition:opacity .2s}
+.task .pill{background:transparent;padding:0}
+.done{display:block;font-size:.82rem;color:var(--muted);margin-top:2px}
+@media (max-width:600px){.task{grid-template-columns:minmax(0,1fr);gap:2px}.headline{font-size:1.25rem}}
+.next{margin-top:14px;padding-top:12px;border-top:1px dashed var(--line);font-size:.88rem;color:var(--muted)}
+.gate{margin-top:12px;background:var(--g-bg);border-radius:10px;padding:10px 14px;font-size:.9rem}
+.gate b{color:var(--g)}
+.navrow{display:flex;justify-content:space-between;gap:8px;margin-top:12px;flex-wrap:wrap}
+
+/* nodes */
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:14px}
+.col{border-radius:10px;padding:12px 14px;background:var(--tb);transition:opacity .2s;min-width:0}
+.col h3{margin:0 0 6px;font-size:.9rem;color:var(--tk)}
+.col ul{margin:0;padding-left:1.1em;font-size:.88rem;display:flex;flex-direction:column;gap:5px}
+.col .empty{font-size:.85rem;color:var(--muted)}
+
+/* overview */
+.phases{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:760px){.phases{grid-template-columns:minmax(0,1fr)}}
+.phase{border-top:3px solid var(--accent);padding-top:10px;min-width:0}
+.phase .rng{font-family:var(--f-mono);font-size:.78rem;color:var(--muted)}
+.phase ul{list-style:none;padding:0;margin:8px 0 0;display:flex;flex-direction:column;gap:6px;font-size:.88rem}
+.phase li{display:grid;grid-template-columns:44px minmax(0,1fr);gap:6px}
+.phase li .mm{font-family:var(--f-mono);color:var(--muted);font-size:.78rem;padding-top:2px}
+.nodelist{list-style:none;padding:0;margin:0;display:flex;flex-direction:column}
+.nodelist li{display:grid;grid-template-columns:70px minmax(0,1fr);gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+.nodelist .mm{font-family:var(--f-mono);color:var(--g);font-weight:500}
+.nodelist .gt{font-size:.86rem;color:var(--muted)}
+.tablewrap{overflow-x:auto}
+table.lib{width:100%;border-collapse:collapse;font-size:.86rem;min-width:640px}
+table.lib th{text-align:left;font-weight:500;color:var(--muted);font-size:.78rem;padding:6px;border-bottom:1px solid var(--line)}
+table.lib td{padding:7px 6px;border-top:1px solid var(--line);vertical-align:top}
+table.lib td.mm{font-family:var(--f-mono);white-space:nowrap;color:var(--muted)}
+textarea{width:100%;min-height:220px;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:10px;font:inherit;font-size:.86rem;color:var(--fg);resize:vertical}
+.poster{max-width:100%;border:1px solid var(--line);border-radius:8px;display:block}
+.note{font-size:.8rem;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<header class="wrap" id="hdr"></header>
+<div class="bar"><div class="wrap" id="bar"></div></div>
+<main class="wrap" id="app"></main>
+
+<script>
+const PAGE="studio";
+/* ---------- 任务库：按「入学年 E」的相对时间写，所有届通用 ----------
+   [年偏移, 月, 方向, 类型, 任务, 完成标准, 优先级(1最高), 地区]
+   方向：c 全体 · s 生化 · e 工科 · b 商科 · o 社科 · m = 数理类(s,e,b)；可写 "s,e"
+   年偏移：E-3 = G10 秋季学年开始那一年（如 2029 届 → 2026） */
+let LIB=[];
+const SRC={X:"张欣凤原表",L:"刘梓童沟通会 + 你的补充",Y:"于明含沟通会 + 你的补充"};
+const MOD={c:"全体",s:"生化",e:"工科",b:"商科",o:"社科",g:"决策"};
+const MODFULL={s:"生物 / 化学",e:"工程 / 物理 / 数学",b:"商科 / 经济",o:"社科 / 心理 / 教育"};
+let REQ={s:"数学 + 生物 + 化学",e:"数学 + 高数 + 物理（+ 化学）",b:"数学 + 经济（高数加分）",o:"待补充"};
+let TEST={s:"ESAT",e:"ESAT（数学类方向为 TMUA）",b:"TMUA",o:"待补充"};
+const NODES=[
+ {yo:-2,mo:3,k:"pick",title:"A-level 选科定案"},
+ {yo:-2,mo:6,k:"igcse",title:"IGCSE 收官 · 暑期落地"},
+ {yo:-1,mo:1,k:"comp",title:"竞赛季收官 · 证据盘点"},
+ {yo:-1,mo:3,k:"lock",title:"锁定英国主方向",r:"uk"},
+ {yo:-1,mo:6,k:"launch",title:"大考结束 · 申请季启动"},
+ {yo:-1,mo:10,k:"submit",title:"递交与笔试"}
+];
+const PHASES=[
+ {n:"阶段一 · 探索与定向",a:[-3,7],z:[-2,8],goal:"IGCSE 拿高分，用比赛和夏校试出方向"},
+ {n:"阶段二 · 专业硬规划",a:[-2,9],z:[-1,8],goal:"A-level 成绩 + 方向证据（竞赛、实践、科研）"},
+ {n:"阶段三 · 申请",a:[-1,9],z:[0,1],goal:"文书、笔试、递交、面试"}
+];
+const BASE=location.href.split("#")[0].replace(/[^/]*$/,"");
+/* ---------- 工具 ---------- */
+const ym=(y,m)=>`${y}-${String(m).padStart(2,"0")}`;
+const addM=(s,n)=>{let[y,m]=s.split("-").map(Number);m+=n;while(m>12){m-=12;y++}while(m<1){m+=12;y--}return ym(y,m)};
+const diffM=(a,b)=>{const[ay,am]=a.split("-").map(Number),[by,bm]=b.split("-").map(Number);return (by-ay)*12+bm-am};
+const now=new Date();const TODAY=ym(now.getFullYear(),now.getMonth()+1);
+const fmt=m=>`${m.slice(2,4)}.${+m.slice(5)}`;
+const fmtLong=m=>`${m.slice(0,4)} 年 ${+m.slice(5)} 月`;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const expand=m=>m==="m"?["s","e","b"]:m.split(",");
+const grade=(E,m)=>{const[y,mo]=m.split("-").map(Number);const g=10+(y-(E-3))-(mo>=9?0:1);return g<10?`G${g}暑`:`G${g}`};
+const short=t=>t.replace(/（[^）]*）/g,"").split("，")[0].trim();
+const rel=(E,yo,mo)=>ym(E+yo,mo);
+const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+
+/* ---------- 学生配置 <-> 链接后缀 ---------- */
+const toToken=c=>`e${c.E}-${c.main}-${c.sec||"x"}-${((c.uk?"u":"")+(c.hk?"h":""))||"n"}-j${c.join.replace("-","")}`;
+function fromToken(t){const m=/^e(\d{4})-([sebo])-([sebox])-([uhn]+)-j(\d{6})$/.exec(t||"");if(!m)return null;
+ return{E:+m[1],main:m[2],sec:m[3]==="x"||m[3]===m[2]?"":m[3],uk:m[4].includes("u"),hk:m[4].includes("h"),join:m[5].slice(0,4)+"-"+m[5].slice(4)}}
+
+/* ---------- 生成个人规划 ---------- */
+function plan(c){
+ const out=[];
+ for(const L of LIB){
+  const[yo,mo,mods,kind,title,done,p,r]=L;const ms=expand(mods);
+  let tr=null;
+  if(ms.includes("c")||(c.sec&&ms.includes(c.main)&&ms.includes(c.sec)))tr="c";else if(ms.includes(c.main))tr=c.main;else if(c.sec&&ms.includes(c.sec))tr=c.sec;
+  if(!tr)continue;
+  if(r==="uk"&&!c.uk)continue; if(r==="hk"&&!c.hk)continue;
+  if(r==="uk"&&tr!=="c"&&tr!==c.main)continue; // 英国只按主方向申请
+  const m=rel(c.E,yo,mo); if(m<c.join)continue;
+  out.push({m,tr:kind==="决策"?"g":tr,kind,title,done,p});
+ }
+ return out.sort((a,b)=>a.m<b.m?-1:a.m>b.m?1:a.p-b.p);
+}
+const endM=c=>rel(c.E,0,1);
+const monthsOf=c=>{const a=[];for(let m=c.join;m<=endM(c);m=addM(m,1))a.push(m);return a};
+const nodesOf=c=>NODES.filter(n=>!(n.r==="uk"&&!c.uk)).map(n=>({...n,m:rel(c.E,n.yo,n.mo)})).filter(n=>n.m>=c.join);
+function headline(ts){const top=ts.filter(t=>t.kind!=="阅读").sort((a,b)=>a.p-b.p).slice(0,2).map(t=>short(t.title));return top.length?top.join(" + "):"校内学习为主，保持节奏"}
+function gate(k,c){
+ const M=MOD[c.main],S=c.sec?MOD[c.sec]:"";
+ switch(k){
+ case"pick":return `主方向（${M}）建议科目：${REQ[c.main]}。`+(c.sec?`辅方向（${S}）：${REQ[c.sec]}。两边都保留会加重 A-level 负担，冲突时以主方向为准。`:"");
+ case"igcse":return "确认暑期每周安排：夏校、科研或实践、A-level 预学都要有落点。";
+ case"comp":return c.sec?`用这一阶段的成绩和投入感受比较两个方向，为后面锁定英国方向准备证据。`:"盘点竞赛与实践成果，开始积累文书素材。";
+ case"lock":return c.sec?(c.hk?`英国 UCAS 只能写一份文书，5 个志愿共用：英国全部按主方向（${M}）申请，辅方向（${S}）放到香港，各校分别申请、分别写文书。`:`英国只能写一份文书。没有香港申请时，辅方向（${S}）从这里起转为兴趣保留。`):`英国 5 个志愿围绕 ${M} 定专业，文书主线定稿。`;
+ case"launch":return c.uk?`主方向笔试：${TEST[c.main]}，以当年官网为准。`+(c.sec?"辅方向走香港，一般不需要再备英国笔试。":""):"香港申请以成绩、文书和面试为主，暑期集中打磨文书。";
+ case"submit":return c.uk?"英国 9 月递交后，10 月完成笔试与香港递交，11–12 月进入面试。":"完成香港申请递交，准备面试。";
+ }return""}
+function cfgLabel(c){return `${c.E} 届（${String(c.E).slice(2)}Fall 入学） · 主方向 ${MODFULL[c.main]}`+(c.sec?` · 辅方向 ${MODFULL[c.sec]}`:"")+` · ${[c.uk&&"英国",c.hk&&"香港"].filter(Boolean).join(" + ")||"地区未选"}`}
+
+/* ---------- 状态 ---------- */
+let mode="studio", studioTab=store.get("st","new"), sv="ov", hl="all", cur=TODAY, curNode=null, fromStudio=false, CFG=null;
+let form=store.get("form",{E:2029,main:"s",sec:"b",uk:true,hk:true,join:TODAY});
+let grp=store.get("grp",{E:2029,m:addM(TODAY,1),mods:["s","e","b","o"],uk:true,hk:true});
+let brand="卓越领航服务";
+let libF="all"; let pname=store.get("pname",""); let prange="all";
+const pkey=()=>"pers:"+(pname||"_");
+let pers=store.get(pkey(),[]); let DL=null; let toastMsg="";
+
+function enterStudent(c,fs){CFG=c;mode="student";fromStudio=fs;const ms=monthsOf(c);cur=ms.includes(TODAY)?TODAY:ms[0];const ns=nodesOf(c);curNode=(ns.find(n=>n.m>=TODAY)||ns[0]||{}).m||null;sv="ov";hl="all"}
+
+/* ---------- 渲染：学生视图 ---------- */
+const dimC=tr=>(hl==="all"||tr===hl||tr==="g")?"":" dim";
+function trOf(t){return t.tr}
+function dotsFor(ts){const s=new Set(ts.map(t=>t.tr==="g"?"c":t.tr));return ["c","s","e","b","o"].filter(x=>s.has(x)).map(x=>`<span class="dot t-${x}"></span>`).join("")}
+function taskLi(t){return `<li class="task t-${t.tr}${dimC(t.tr)}"><span class="pill">${MOD[t.tr]}</span><div><span class="kind">${t.kind}</span>${esc(t.title)}<span class="done">完成标准：${esc(t.done)}</span></div></li>`}
+function sMonth(P){
+ const ms=monthsOf(CFG),ns=nodesOf(CFG),nodeSet=new Set(ns.map(n=>n.m));
+ const byY={};ms.forEach(m=>(byY[m.slice(0,4)]??=[]).push(m));
+ const strip=`<div class="strip">${Object.entries(byY).map(([y,a])=>`<div class="yr"><span class="yr-label">${y}</span><div class="yr-row">${a.map(m=>`<button class="mbtn${nodeSet.has(m)?" node":""}${m<TODAY?" past":""}" data-m="${m}" aria-pressed="${m===cur}" aria-label="${m}">${+m.slice(5)}月<span class="dots">${dotsFor(P.filter(t=>t.m===m))}</span></button>`).join("")}</div></div>`).join("")}</div>`;
+ const ts=P.filter(t=>t.m===cur),i=ms.indexOf(cur),nx=ms[i+1],nd=ns.find(n=>n.m===cur);
+ const nextNode=ns.find(n=>n.m>cur);
+ return strip+`<section class="card" style="margin-top:12px">
+  <div class="eyebrow">${fmtLong(cur)} · ${grade(CFG.E,cur)}${cur===TODAY?" · 本月":""}</div>
+  <div class="headline">${esc(headline(ts))}</div>
+  ${nd?`<div class="gate"><b>关键节点 · ${nd.title}</b>：${gate(nd.k,CFG)}</div>`:""}
+  ${ts.length?`<ul class="tasks">${ts.map(taskLi).join("")}</ul>`:`<p class="sub">本月没有额外任务，专注校内学习。</p>`}
+  <div class="next">${nx?`下月预告 · ${fmt(nx)}：${esc(headline(P.filter(t=>t.m===nx)))}`:""}${nextNode?`<br>距离「${nextNode.title}」还有 ${diffM(cur,nextNode.m)} 个月`:""}</div>
+  <div class="navrow"><div class="row"><button data-step="-1" ${i<=0?"disabled":""}>← 上个月</button><button data-step="1" ${!nx?"disabled":""}>下个月 →</button></div>
+  ${fromStudio?`<div class="row"><button data-act="copyMonth">复制本月提醒文字</button>${DL?`<button data-act="posterMonth">导出本月提醒图</button>`:""}</div>`:""}</div>
+  <div class="toast" id="toast">${toastMsg}</div>
+  <div id="out"></div>
+ </section>`;
+}
+function nodeItems(P,ns,idx){const n=ns[idx],prev=idx>0?ns[idx-1].m:addM(CFG.join,-1);return P.filter(t=>t.m>prev&&t.m<=n.m&&t.p<=2&&t.tr!=="g")}
+function sNode(P){
+ const ns=nodesOf(CFG); if(!ns.length)return `<div class="card">加入时间之后没有关键节点。</div>`;
+ const idx=Math.max(0,ns.findIndex(n=>n.m===curNode)),n=ns[idx],items=nodeItems(P,ns,idx);
+ const tracks=["c",CFG.main,CFG.sec].filter(Boolean);
+ const col=k=>{const a=items.filter(t=>t.tr===k);return `<div class="col t-${k}${dimC(k)}"><h3>${k==="c"?"全体（每个方向都要）":(k===CFG.main?"主方向 · ":"辅方向 · ")+MODFULL[k]}</h3>${a.length?`<ul>${a.map(t=>`<li>${esc(t.title)}<span class="done">${fmt(t.m)} · ${esc(t.done)}</span></li>`).join("")}</ul>`:`<p class="empty">这一段没有该方向的专属任务。</p>`}</div>`};
+ return `<div class="row">${ns.map(x=>`<button class="tab" data-node="${x.m}" aria-pressed="${x.m===n.m}">${fmt(x.m)} · ${x.title.split(" · ")[0]}</button>`).join("")}</div>
+ <section class="card" style="margin-top:12px"><div class="eyebrow">节点验收 · ${fmtLong(n.m)} · ${grade(CFG.E,n.m)}</div>
+  <div class="headline">${n.title}</div><p class="sub">到这个月底应完成的事。各方向始终同时显示，高亮只改变视觉重点。</p>
+  <div class="cols">${tracks.map(col).join("")}</div>
+  <div class="gate"><b>决策提示</b>：${gate(n.k,CFG)}</div></section>`;
+}
+function sOverview(P){
+ const ns=nodesOf(CFG),ms=monthsOf(CFG);
+ const ph=PHASES.map(p=>{const a=rel(CFG.E,...p.a),z=rel(CFG.E,...p.z);if(z<CFG.join)return"";const a2=a<CFG.join?CFG.join:a;
+  const ts=P.filter(t=>t.m>=a2&&t.m<=z&&(t.p===1||(CFG.sec&&t.tr===CFG.sec&&t.p<=2)));
+  return `<div class="phase"><h2>${p.n}</h2><div class="rng">${fmt(a2)} – ${fmt(z)}</div><p class="sub">${p.goal}</p>
+  <ul>${ts.map(t=>`<li class="t-${t.tr}${dimC(t.tr)}"><span class="mm">${fmt(t.m)}</span><span><span class="pill">${MOD[t.tr]}</span> ${esc(short(t.title))}</span></li>`).join("")}</ul></div>`}).join("");
+ return `<section class="card"><div class="eyebrow">规划总览</div><div class="headline">未来 ${ms.length} 个月，我们一起完成这些事</div>
+  <div class="stat"><div><b>${ms.length}</b>个月</div><div><b>${P.length}</b>项任务</div><div><b>${ns.length}</b>个关键节点</div><div><b>${fmt(CFG.join)}–${fmt(endM(CFG))}</b>规划区间</div></div>
+  <div class="phases">${ph}</div></section>
+  <section class="card" style="margin-top:16px"><h2>关键节点与决策</h2><ul class="nodelist">${ns.map(n=>`<li><span class="mm">${fmt(n.m)}</span><div><b>${n.title}</b> <span class="note">${grade(CFG.E,n.m)}</span><div class="gt">${gate(n.k,CFG)}</div></div></li>`).join("")}</ul>
+  <div class="row" style="margin-top:12px"><button data-act="csv" ${fromStudio&&DL?"":"hidden"}>导出全程表（Excel 可打开）</button><button class="primary" data-sv="month">查看本月任务 →</button></div></section>`;
+}
+
+/* ---------- 渲染：工作台 ---------- */
+function opt(v,cur,l){return `<option value="${v}" ${String(v)===String(cur)?"selected":""}>${l}</option>`}
+let years=[2028,2029,2030,2031];
+function stNew(){
+ const c=form,P=plan(c),ns=nodesOf(c),tok=toToken(c),link=(BASE?BASE:"（规划中心链接）")+"#"+tok;
+ return `<div class="two"><section class="card"><h2>新学生规划</h2>
+  <div class="field"><label for="f-E">入学年（申请季的下一年）</label><select id="f-E" data-f="E">${years.map(y=>opt(y,c.E,`${y} 届 · ${String(y).slice(2)}Fall`)).join("")}</select></div>
+  <div class="field"><label for="f-main">主方向</label><select id="f-main" data-f="main">${Object.keys(MODFULL).map(k=>opt(k,c.main,MODFULL[k])).join("")}</select></div>
+  <div class="field"><label for="f-sec">辅方向（可不选）</label><select id="f-sec" data-f="sec">${opt("",c.sec,"无，单一方向")}${Object.keys(MODFULL).filter(k=>k!==c.main).map(k=>opt(k,c.sec,MODFULL[k])).join("")}</select></div>
+  <div class="field"><span class="lab">申请地区</span><div class="checks"><label><input type="checkbox" id="f-uk" data-f="uk" ${c.uk?"checked":""}>英国</label><label><input type="checkbox" id="f-hk" data-f="hk" ${c.hk?"checked":""}>香港</label></div></div>
+  <div class="field"><label for="f-join">加入规划的月份</label><input type="month" id="f-join" data-f="join" value="${c.join}"></div>
+ </section>
+ <section class="card"><h2>个性化安排</h2><p class="note">雅思、阅读、课程、项目这类因人而异的安排加在这里。只出现在导出的规划图上，不进家长链接；保存在你这台电脑的浏览器里，按学生称呼区分。</p>
+  <div class="field"><label for="p-name">学生称呼（只出现在图片上）</label><input type="text" id="p-name" value="${esc(pname)}" placeholder="如：刘梓童"></div>
+  <div class="field"><label for="p-m">月份</label><input type="month" id="p-m" value="${c.join}"></div>
+  <div class="field"><label for="p-t">方向</label><select id="p-t">${opt("c","c","全体")}${opt(c.main,"c","主方向 · "+MOD[c.main])}${c.sec?opt(c.sec,"c","辅方向 · "+MOD[c.sec]):""}</select></div>
+  <div class="field"><label for="p-x">内容</label><input type="text" id="p-x" placeholder="如：雅思首考（寒假，目标 6.5）"></div>
+  <div class="row"><button class="primary" data-act="addPers">添加</button></div>
+  <ul class="tasks">${pers.slice().sort((a,b)=>a.m<b.m?-1:1).map(x=>`<li class="task t-${x.t}"><span class="pill">${fmt(x.m)}</span><div>★ ${esc(x.x)} <button data-delp="${x.id}" aria-label="删除">删除</button></div></li>`).join("")||'<li class="note">还没有个性化安排。</li>'}</ul>
+ </section>
+ <section class="card"><div class="eyebrow">预览</div><div class="headline">${esc(cfgLabel(c))}</div>
+  <div class="stat"><div><b>${monthsOf(c).length}</b>个月</div><div><b>${P.length}</b>项任务</div><div><b>${ns.length}</b>个关键节点</div></div>
+  <ul class="nodelist">${ns.map(n=>`<li><span class="mm">${fmt(n.m)}</span><div><b>${n.title}</b><div class="gt">${gate(n.k,c)}</div></div></li>`).join("")}</ul>
+  <div class="field" style="margin-top:12px"><span class="lab">家长 / 学生链接（不含姓名，只含届别和方向）</span><div class="linkbox" id="linkbox">${esc(link)}</div></div>
+  <div class="row"><button class="primary" data-act="openStudent">打开学生视图</button><button data-act="copyLink">复制链接</button>${DL?`<button data-act="csvForm">导出全程表</button>`:""}</div>
+  <div class="toast" id="toast">${toastMsg}</div>
+  <div class="field" style="margin-top:16px"><label for="p-range">规划图范围</label><select id="p-range">${opt("all",prange,"全程")}${opt("6",prange,"从加入月份起 6 个月")}${opt("12",prange,"从加入月份起 12 个月")}</select></div>
+  <div class="row"><button data-act="planImg">生成规划图</button>${DL?`<button data-act="savePlan">保存规划图</button>`:""}</div>
+  <img class="poster" id="planimg" alt="规划图预览" hidden></section></div>`;
+}
+function grpTasks(g){
+ const sel=new Set(g.mods),groups={};
+ for(const L of LIB){const[yo,mo,mods,kind,title,done,p,r]=L;if(rel(g.E,yo,mo)!==g.m)continue;
+  if(r==="uk"&&!g.uk)continue;if(r==="hk"&&!g.hk)continue;
+  const ms=expand(mods);let key;if(ms.includes("c"))key="c";else{const hit=ms.filter(x=>sel.has(x));if(!hit.length)continue;key=hit.join(",")}
+  (groups[key]??=[]).push({kind,title,done,p})}
+ const rk=k=>k==="c"?-1:"sebo".indexOf(k[0])*10+k.length;const order=Object.keys(groups).sort((a,b)=>rk(a)-rk(b));
+ return order.map(k=>({key:k,label:k==="c"?"全体同学":k.split(",").map(x=>MOD[x]).join(" · ")+(k.includes(",")?"":"方向"),cls:k==="c"?"c":k.split(",")[0],items:groups[k].sort((a,b)=>a.p-b.p)}));
+}
+function grpDoc(g){
+ const secs=grpTasks(g),all=secs.flatMap(s=>s.items);
+ const nx=addM(g.m,1);const nxSecs=grpTasks({...g,m:nx}).flatMap(s=>s.items);
+ const node=NODES.filter(n=>!(n.r==="uk"&&!g.uk)).map(n=>({...n,m:rel(g.E,n.yo,n.mo)})).find(n=>n.m>=g.m);
+ return{title:`${+g.m.slice(5)}月任务提醒`,sub:`${g.E} 届 · ${grade(g.E,g.m)} · ${fmtLong(g.m)}`,focus:headline(all),sections:secs,
+  foot:[nxSecs.length?`下月预告：${headline(nxSecs)}`:"",node?(node.m===g.m?`本月是关键节点：${node.title}`:`距离「${node.title}」还有 ${diffM(g.m,node.m)} 个月`):""].filter(Boolean)}
+}
+function docText(d){return `【${d.sub.split(" · ").slice(0,2).join(" · ")} · ${d.title}】\n本月重点：${d.focus}\n`+d.sections.map(s=>`\n▍${s.label}\n`+s.items.map(t=>`· ${t.title}（${t.done}）`).join("\n")).join("\n")+(d.sections.length?"":"\n本月以校内学习为主。")+`\n\n${d.foot.join("\n")}\n— ${brand}`}
+function stGroup(){
+ const g=grp,d=grpDoc(g);
+ return `<div class="two"><section class="card"><h2>群发提醒</h2>
+  <div class="field"><label for="g-E">届别</label><select id="g-E" data-g="E">${years.map(y=>opt(y,g.E,`${y} 届`)).join("")}</select></div>
+  <div class="field"><label for="g-m">提醒月份</label><input type="month" id="g-m" data-g="m" value="${g.m}"></div>
+  <div class="field"><span class="lab">群里包含的方向</span><div class="checks">${Object.keys(MODFULL).map(k=>`<label><input type="checkbox" id="g-${k}" data-gm="${k}" ${g.mods.includes(k)?"checked":""}>${MOD[k]}</label>`).join("")}</div></div>
+  <div class="field"><span class="lab">地区</span><div class="checks"><label><input type="checkbox" id="g-uk" data-g="uk" ${g.uk?"checked":""}>英国</label><label><input type="checkbox" id="g-hk" data-g="hk" ${g.hk?"checked":""}>香港</label></div></div>
+  <div class="field"><label for="g-brand">落款</label><input type="text" id="g-brand" value="${esc(brand)}"></div>
+ </section>
+ <section class="card stack"><div><div class="eyebrow">群消息文字</div><textarea id="gtext" readonly>${esc(docText(d))}</textarea>
+  <div class="row" style="margin-top:8px"><button class="primary" data-act="copyGroup">复制文字</button>${DL?`<button data-act="posterGroup">保存提醒图</button>`:""}</div><div class="toast" id="toast">${toastMsg}</div></div>
+  <div><div class="eyebrow">提醒图预览（手机上可长按保存）</div><img class="poster" id="poster" alt="提醒图预览"></div></section></div>`;
+}
+function stLib(){
+ const rows=LIB.filter(L=>libF==="all"||expand(L[2]).includes(libF)).map(L=>{const[yo,mo,mods,kind,title,done,p,r,src]=L;const ms=expand(mods);
+  const g=grade(2029,ym(2029+yo,mo));
+  return `<tr><td class="mm">${g} · ${mo}月</td><td>${ms.map(x=>`<span class="pill t-${kind==="决策"?"g":x}">${MOD[x]}</span>`).join(" ")}</td><td><span class="kind">${kind}</span>${esc(title)}</td><td>${esc(done)}</td><td>${r==="uk"?"英国":r==="hk"?"香港":"—"}</td><td>${"●".repeat(4-p)}</td><td class="note">${esc(SRC[src]||src||"未注明")}</td></tr>`}).join("");
+ return `<section class="card"><h2>任务库</h2><p class="sub">按年级和月份写，所有届通用：换届别时日期自动顺延。内容来自网站的 tasks.csv，修改那个文件即可更新；每条都标了来源。</p>
+  <div class="row" style="margin:12px 0">${["all","c","s","e","b","o"].map(k=>`<button class="tab" data-lib="${k}" aria-pressed="${libF===k}">${k==="all"?"全部":MOD[k]}</button>`).join("")}</div>
+  <div class="tablewrap"><table class="lib"><thead><tr><th>时间</th><th>方向</th><th>任务</th><th>完成标准</th><th>地区</th><th>重要度</th><th>来源</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
+}
+
+/* ---------- 主渲染 ---------- */
+function render(){
+ const hdr=document.getElementById("hdr"),bar=document.getElementById("bar"),app=document.getElementById("app");
+ if(mode==="empty"){hdr.innerHTML='<div class="eyebrow">'+esc(brand)+'</div><h1>升学规划时间线</h1>';bar.innerHTML="";app.innerHTML='<section class="card"><div class="headline">请用老师发给你的专属链接打开</div><p class="sub">链接末尾带有你的届别和方向信息，打开后就能看到你的规划总览、每月任务和关键节点。</p></section>';return}
+ if(mode==="student"){
+  const P=plan(CFG);
+  hdr.innerHTML=`<div class="eyebrow">${esc(brand)}</div><h1>升学规划时间线</h1><p class="sub">${esc(cfgLabel(CFG))}</p>`;
+  const hls=["all","c",CFG.main,CFG.sec].filter(Boolean);
+  bar.innerHTML=`${fromStudio?`<button data-act="back">← 工作台</button>`:""}<div class="group" role="group" aria-label="视图"><span class="group-label">视图</span>${[["ov","总览"],["month","按月"],["node","关键节点"]].map(([k,l])=>`<button class="tab" data-sv="${k}" aria-pressed="${sv===k}">${l}</button>`).join("")}</div>
+   <div class="group" role="group" aria-label="高亮方向"><span class="group-label">高亮</span>${hls.map(k=>`<button class="hl" data-hl="${k}" aria-pressed="${hl===k}">${k==="all"?"全部":MOD[k]}</button>`).join("")}</div>`;
+  app.innerHTML=sv==="ov"?sOverview(P):sv==="month"?sMonth(P):sNode(P);
+  const sel=app.querySelector('.mbtn[aria-pressed="true"]');if(sel)sel.scrollIntoView({block:"nearest",inline:"center"});
+ }else{
+  hdr.innerHTML=`<div class="eyebrow">${esc(brand)} · 老师工作台</div><h1>升学规划中心</h1><p class="sub">一套任务库，按届别、主辅方向和申请地区自动生成每个学生的 2–3 年时间线，并产出群发提醒。</p>`;
+  bar.innerHTML=`<div class="group" role="group" aria-label="工作台">${[["new","新学生规划"],["group","群发提醒"],["lib","任务库"]].map(([k,l])=>`<button class="tab" data-st="${k}" aria-pressed="${studioTab===k}">${l}</button>`).join("")}</div>`;
+  app.innerHTML=studioTab==="new"?stNew():studioTab==="group"?stGroup():stLib();
+  if(studioTab==="group")drawPoster(grpDoc(grp)).then(cv=>{const im=document.getElementById("poster");if(im)im.src=cv.toDataURL("image/png")});
+ }
+ toastMsg="";
+}
+
+/* ---------- 提醒图（固定浅色，便于转发） ---------- */
+const PC={c:["#4a5563","#eceff2"],s:["#1f7a5c","#e1f2eb"],e:["#2b5fa8","#e3ecf8"],b:["#a3620c","#fbefdc"],o:["#7b4a8e","#f1e7f5"]};
+let fontsP=null;
+function fontsReady(){return fontsP??=Promise.all([document.fonts.load('900 60px "Noto Serif SC"','提醒'),document.fonts.load('500 30px "Noto Sans SC"','任务'),document.fonts.load('700 30px "Noto Sans SC"','任务')]).catch(()=>{})}
+function wrapT(ctx,text,w){const out=[];let line="";for(const ch of text){const t=line+ch;if(ctx.measureText(t).width>w&&line){out.push(line);line=ch}else line=t}if(line)out.push(line);return out}
+async function drawPoster(d){
+ await fontsReady();
+ const W=1080,PAD=72,IW=W-PAD*2,SANS='"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif',SERIF='"Noto Serif SC","Songti SC",serif';
+ const cv=document.createElement("canvas"),ctx=cv.getContext("2d");
+ const run=(draw)=>{let y=PAD;
+  const txt=(s,font,color,x,lh,w)=>{ctx.font=font;const ls=wrapT(ctx,s,w);ls.forEach(l=>{if(draw){ctx.fillStyle=color;ctx.fillText(l,x,y+lh*0.78)}y+=lh});};
+  txt(brand,`500 28px ${SANS}`,"#647079",PAD,40,IW);
+  y+=6;txt(d.title,`900 76px ${SERIF}`,"#1c2226",PAD,96,IW);
+  txt(d.sub,`500 30px ${SANS}`,"#647079",PAD,44,IW);
+  y+=24;
+  const fy=y;ctx.font=`700 34px ${SANS}`;const fl=wrapT(ctx,"本月重点："+d.focus,IW-48);const fh=fl.length*50+40;
+  if(draw){ctx.fillStyle="#23466b";roundRect(ctx,PAD,fy,IW,fh,18);ctx.fill();ctx.fillStyle="#fff";fl.forEach((l,i)=>ctx.fillText(l,PAD+24,fy+20+i*50+38))}
+  y+=fh+32;
+  if(!d.sections.length){txt("本月以校内学习为主，保持节奏。",`500 32px ${SANS}`,"#1c2226",PAD,48,IW)}
+  for(const s of d.sections){const[fg,bg]=PC[s.cls]||PC.c;
+   ctx.font=`700 30px ${SANS}`;const lw=ctx.measureText(s.label).width+32;
+   if(draw){ctx.fillStyle=bg;roundRect(ctx,PAD,y,lw,48,10);ctx.fill();ctx.fillStyle=fg;ctx.fillText(s.label,PAD+16,y+35)}
+   y+=64;
+   for(const t of s.items){
+    if(draw){ctx.fillStyle=fg;ctx.beginPath();ctx.arc(PAD+10,y+22,7,0,7);ctx.fill()}
+    const sy=y;txt(t.title,`500 32px ${SANS}`,"#1c2226",PAD+34,46,IW-34);
+    txt("完成标准："+t.done,`400 26px ${SANS}`,"#647079",PAD+34,38,IW-34);y+=14;
+   }
+   y+=18;
+  }
+  y+=10;if(draw){ctx.fillStyle="#dce0e4";ctx.fillRect(PAD,y,IW,2)}y+=26;
+  d.foot.forEach(f=>txt(f,`500 28px ${SANS}`,"#9b2c3c",PAD,42,IW));
+  return y+PAD;};
+ cv.width=W;cv.height=2000;const H=run(false);cv.height=Math.ceil(H);
+ ctx.fillStyle="#f5f6f7";ctx.fillRect(0,0,W,cv.height);ctx.fillStyle="#ffffff";roundRect(ctx,24,24,W-48,cv.height-48,28);ctx.fill();
+ run(true);return cv;
+}
+async function drawPlan(c){
+ await fontsReady();
+ const W=1080,PAD=64,SANS='"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif',SERIF='"Noto Serif SC","Songti SC",serif';
+ let ms=monthsOf(c);if(prange!=="all")ms=ms.slice(0,+prange);
+ const P=plan(c),ns=nodesOf(c),nodeAt=Object.fromEntries(ns.map(n=>[n.m,n]));
+ const label=k=>k==="g"?"决策":k==="c"?"全体":MOD[k];
+ const cv=document.createElement("canvas"),ctx=cv.getContext("2d");
+ const run=draw=>{let y=PAD;const L=PAD,MW=150,X=L+MW,TW=W-X-PAD;
+  const txt=(s,font,color,x,lh,w)=>{ctx.font=font;wrapT(ctx,s,w).forEach(l=>{if(draw){ctx.fillStyle=color;ctx.fillText(l,x,y+lh*0.78)}y+=lh})};
+  txt(brand,`500 26px ${SANS}`,"#647079",L,38,W-2*PAD);
+  txt(`${pname||"学生"} · 升学规划时间线`,`900 60px ${SERIF}`,"#1c2226",L,80,W-2*PAD);
+  txt(cfgLabel(c),`500 26px ${SANS}`,"#647079",L,38,W-2*PAD);
+  y+=8;txt("★ 为个人安排；其余为通用考试季与竞赛日期，以官方当年公布为准",`400 22px ${SANS}`,"#9aa3ad",L,32,W-2*PAD);y+=16;
+  let lastPh=null;
+  for(const m of ms){
+   const items=P.filter(t=>t.m===m&&!(t.tr==="g"&&nodeAt[m])).map(t=>({k:t.tr,x:t.title,own:false})).concat(pers.filter(p=>p.m===m).map(p=>({k:p.t,x:p.x,own:true})));
+   const nd=nodeAt[m];if(!items.length&&!nd)continue;
+   const ph=PHASES.find(p=>m>=rel(c.E,...p.a)&&m<=rel(c.E,...p.z));
+   if(ph&&ph!==lastPh){lastPh=ph;y+=10;if(draw){ctx.fillStyle="#23466b";roundRect(ctx,L,y,W-2*PAD,52,10);ctx.fill();ctx.fillStyle="#fff";ctx.font=`700 28px ${SANS}`;ctx.fillText(ph.n,L+18,y+36)}y+=68}
+   const y0=y;
+   if(draw){ctx.fillStyle="#1c2226";ctx.font=`700 30px ${SANS}`;ctx.fillText(fmt(m),L,y+32);ctx.fillStyle="#9aa3ad";ctx.font=`500 22px ${SANS}`;ctx.fillText(grade(c.E,m),L,y+62)}
+   if(nd){txt("节点 · "+nd.title,`700 26px ${SANS}`,"#9b2c3c",X,40,TW)}
+   for(const it of items){const[fg]=PC[it.k==="g"?"c":it.k]||PC.c;const col=it.k==="g"?"#9b2c3c":fg;
+    const tag=(it.own?"★ ":"")+label(it.k)+"  ";ctx.font=`700 24px ${SANS}`;const tw=ctx.measureText(tag).width;
+    if(draw){ctx.fillStyle=col;ctx.fillText(tag,X,y+30)}
+    const sy=y;txt(it.x,`${it.own?700:400} 26px ${SANS}`,"#1c2226",X+tw,38,TW-tw);y=Math.max(y,sy+38)+4}
+   y=Math.max(y,y0+72)+10;if(draw){ctx.fillStyle="#e4e7ea";ctx.fillRect(L,y-6,W-2*PAD,2)}y+=10;
+  }
+  return y+PAD;};
+ cv.width=W;cv.height=4000;const H=run(false);cv.height=Math.ceil(H);
+ ctx.fillStyle="#ffffff";ctx.fillRect(0,0,W,cv.height);run(true);return cv;
+}
+function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()}
+
+/* ---------- 导出 ---------- */
+function studentDoc(m){const P=plan(CFG).filter(t=>t.m===m);const secs=["g","c",CFG.main,CFG.sec].filter(Boolean).map(k=>({cls:k==="g"?"c":k,label:k==="g"?"决策":k==="c"?"全体":(k===CFG.main?"主方向 · ":"辅方向 · ")+MOD[k],items:P.filter(t=>t.tr===k)})).filter(s=>s.items.length);
+ const ms=monthsOf(CFG),nx=ms[ms.indexOf(m)+1],node=nodesOf(CFG).find(n=>n.m>=m);
+ return{title:`${+m.slice(5)}月任务提醒`,sub:`${CFG.E} 届 · ${grade(CFG.E,m)} · ${fmtLong(m)}`,focus:headline(P),sections:secs,foot:[nx?`下月预告：${headline(plan(CFG).filter(t=>t.m===nx))}`:"",node?(node.m===m?`本月是关键节点：${node.title}`:`距离「${node.title}」还有 ${diffM(m,node.m)} 个月`):""].filter(Boolean)}}
+function csvOf(c){const ns=new Set(nodesOf(c).map(n=>n.m));const q=s=>`"${String(s).replace(/"/g,'""')}"`;
+ return "﻿"+["月份,年级,方向,类型,任务,完成标准,关键节点,状态"].concat(plan(c).map(t=>[t.m,grade(c.E,t.m),MOD[t.tr],t.kind,t.title,t.done,ns.has(t.m)?"是":"",""].map(q).join(","))).join("\r\n")}
+async function save(filename,data){if(!DL)return;try{await DL.save({filename,data});toast("已保存")}catch(e){if(e&&e.code==="declined")return;toast("这里暂时无法保存文件，可以长按图片或截图。")}}
+function toast(msg){const el=document.getElementById("toast");if(el)el.textContent=msg;else{toastMsg=msg}}
+async function copy(text,fallbackEl){try{await navigator.clipboard.writeText(text);toast("已复制，可以直接粘贴到群里")}catch(e){if(fallbackEl){fallbackEl.focus();fallbackEl.select?.()}toast("自动复制不可用，已选中文字，请手动复制。")}}
+
+/* ---------- 事件 ---------- */
+document.addEventListener("click",async e=>{
+ const b=e.target.closest("button");if(!b)return;const d=b.dataset;
+ if(d.delp){pers=pers.filter(x=>x.id!==d.delp);store.set(pkey(),pers);render();return}
+ if(d.st){studioTab=d.st;store.set("st",d.st);render();return}
+ if(d.sv){sv=d.sv;render();return}
+ if(d.hl){hl=d.hl;render();return}
+ if(d.m){cur=d.m;render();return}
+ if(d.step){const ms=monthsOf(CFG),i=ms.indexOf(cur)+ +d.step;if(ms[i])cur=ms[i];render();return}
+ if(d.node){curNode=d.node;render();return}
+ if(d.lib){libF=d.lib;render();return}
+ switch(d.act){
+  case"openStudent":enterStudent({...form},true);render();window.scrollTo(0,0);break;
+  case"back":mode="studio";render();break;
+  case"copyLink":copy(document.getElementById("linkbox").textContent,document.getElementById("linkbox"));break;
+  case"copyGroup":{const ta=document.getElementById("gtext");copy(ta.value,ta);break}
+  case"posterGroup":{const cv=await drawPoster(grpDoc(grp));cv.toBlob(bl=>save(`${grp.E}届-${grp.m}-任务提醒.png`,bl),"image/png");break}
+  case"copyMonth":{const t=docText(studentDoc(cur));const o=document.getElementById("out");o.innerHTML=`<textarea id="mtext" readonly></textarea>`;const ta=document.getElementById("mtext");ta.value=t;copy(t,ta);break}
+  case"posterMonth":{const cv=await drawPoster(studentDoc(cur));cv.toBlob(bl=>save(`${cur}-任务提醒.png`,bl),"image/png");break}
+  case"csv":save(`${CFG.E}届-规划时间线.csv`,csvOf(CFG));break;
+  case"addPers":{const m=document.getElementById("p-m").value,t=document.getElementById("p-t").value,x=document.getElementById("p-x").value.trim();if(!m||!x){toast("请填月份和内容");break}pers.push({id:Date.now().toString(36),m,t,x});store.set(pkey(),pers);render();break}
+  case"planImg":{const cv=await drawPlan(form);const im=document.getElementById("planimg");im.src=cv.toDataURL("image/png");im.hidden=false;break}
+  case"savePlan":{const cv=await drawPlan(form);cv.toBlob(bl=>save(`${pname||"学生"}-规划图.png`,bl),"image/png");break}
+  case"csvForm":save(`${form.E}届-${MOD[form.main]}${form.sec?"+"+MOD[form.sec]:""}-规划时间线.csv`,csvOf(form));break;
+ }
+});
+document.addEventListener("change",e=>{
+ const el=e.target,d=el.dataset;
+ if(d.f){form={...form,[d.f]:el.type==="checkbox"?el.checked:(d.f==="E"?+el.value:el.value)};if(form.sec===form.main)form.sec="";if(!form.join)form.join=TODAY;store.set("form",form);render()}
+ else if(d.g){grp={...grp,[d.g]:el.type==="checkbox"?el.checked:(d.g==="E"?+el.value:el.value)};if(!grp.m)grp.m=addM(TODAY,1);store.set("grp",grp);render()}
+ else if(d.gm){const s=new Set(grp.mods);el.checked?s.add(d.gm):s.delete(d.gm);grp={...grp,mods:[...s]};store.set("grp",grp);render()}
+ else if(el.id==="p-name"){pname=el.value.trim();store.set("pname",pname);pers=store.get(pkey(),[]);render()}
+ else if(el.id==="p-range"){prange=el.value}
+ else if(el.id==="g-brand"){brand=el.value.trim()||"卓越领航服务";render()}
+});
+const K={"全体":"c","生化":"s","工科":"e","商科":"b","社科":"o"};
+function parseCSV(t){t=t.replace(/^\ufeff/,"");const rows=[];let row=[],f="",q=false;for(let i=0;i<t.length;i++){const ch=t[i];if(q){if(ch==='"'){if(t[i+1]==='"'){f+='"';i++}else q=false}else f+=ch}else if(ch==='"')q=true;else if(ch===","){row.push(f);f=""}else if(ch==="\n"||ch==="\r"){if(ch==="\r"&&t[i+1]==="\n")i++;row.push(f);f="";if(row.some(x=>x.trim()))rows.push(row);row=[]}else f+=ch}row.push(f);if(row.some(x=>x.trim()))rows.push(row);return rows}
+function toLib(rows){const out=[];for(const r of rows.slice(1)){const[gr,mo,dir,kind,title,done,p,reg,src]=r.map(x=>(x||"").trim());const gn=gr.startsWith("G9")?9:+gr.replace(/\D/g,"");const m=+mo;if(!gn||!m||!title)continue;
+ const mods=dir.split(/[、,，\/\s]+/).map(x=>K[x]).filter(Boolean);if(!mods.length)continue;
+ out.push([(gn-10)+(m>=9?-3:-2),m,mods.includes("c")?"c":mods.join(","),kind||"任务",title,done||"",+p||2,reg==="英国"?"uk":reg==="香港"?"hk":undefined,src])}return out}
+async function boot(){
+ try{const[c,j]=await Promise.all([fetch("tasks.csv",{cache:"no-store"}).then(r=>{if(!r.ok)throw 0;return r.text()}),fetch("settings.json",{cache:"no-store"}).then(r=>r.ok?r.json():{}).catch(()=>({}))]);
+  LIB=toLib(parseCSV(c));
+  if(j.落款)brand=j.落款; if(Array.isArray(j.可选届别))years=j.可选届别;
+  const map=(o,dst)=>{if(o)for(const[k,v]of Object.entries(o))if(K[k])dst[K[k]]=v};map(j.选科建议,REQ);map(j.笔试,TEST);
+ }catch(e){document.getElementById("app").innerHTML='<div class="card">没有读到 tasks.csv。请确认它和 index.html 在同一个文件夹，并通过网址（而不是双击文件）打开。</div>';return}
+ if(!window.claude)DL={save:async({filename,data})=>{const bl=data instanceof Blob?data:new Blob([data],{type:"text/plain;charset=utf-8"});const u=URL.createObjectURL(bl);const a=document.createElement("a");a.href=u;a.download=filename;document.body.appendChild(a);a.click();setTimeout(()=>{a.remove();URL.revokeObjectURL(u)},4000);return{status:"saved"}}};
+ fromHash();
+}
+function fromHash(){if(PAGE==="studio"){mode="studio";render();return}const c=fromToken(location.hash.slice(1));if(c){enterStudent(c,false)}else{mode="empty"}render()}
+window.addEventListener("hashchange",fromHash);
+boot();
+(async()=>{try{DL=await window.claude?.use?.("downloads")}catch(e){DL=null}if(DL)render()})();
+</script>
+
+</body></html>
